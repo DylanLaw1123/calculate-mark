@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>初三总平均分计算器</title>
+<style>
+:root {
+  --bg: #f5f6f8; --card: #fff; --text: #1f2430; --muted: #6b7280;
+  --line: #e5e7eb; --accent: #2563eb; --accent-soft: #e8efff; --danger: #dc2626;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12141a; --card: #1b1e27; --text: #e8eaf0; --muted: #98a0b3;
+    --line: #2d3240; --accent: #6b9bff; --accent-soft: #232b44; --danger: #f87171;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  line-height: 1.5;
+}
+header { max-width: 900px; margin: 0 auto; padding: 24px 16px 8px; }
+h1 { margin: 0 0 12px; font-size: 1.6rem; }
+h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.meta { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: .9rem; }
+.meta input { width: 90px; }
+main { max-width: 900px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { padding: 8px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: .85rem; }
+td:first-child, th:first-child { text-align: left; }
+tfoot td { font-weight: 600; border-bottom: none; }
+input {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;
+}
+td input { width: 84px; text-align: center; }
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.hint { margin: 12px 0 0; font-size: .82rem; color: var(--muted); }
+.result .row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.result .row strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.result .final { border-bottom: none; background: var(--accent-soft); padding: 12px; border-radius: 8px; margin-top: 8px; }
+.result .final strong { font-size: 2rem; color: var(--accent); }
+button {
+  margin-top: 12px; font: inherit; cursor: pointer; color: var(--danger);
+  background: transparent; border: 1px solid var(--danger); border-radius: 6px; padding: 6px 14px;
+}
+button:hover { background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>初三总平均分计算器</h1>
+  <div class="meta">
+    <label>年份 <input id="year" type="number" value="2026"></label>
+    <label>班级 <input id="class" type="text" value="初三4"></label>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>各科成绩</h2>
+    <div class="table-wrap">
+      <table id="scores">
+        <thead>
+          <tr><th>科目</th><th>上半年</th><th>下半年</th><th>平均</th><th>周节数</th><th>积分</th></tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr><td colspan="4">合计</td><td id="totalPeriods">0</td><td id="totalPoints">0</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="hint">下半年全部留空时，平均 = 上半年；填写下半年后，平均 = (上半年 + 下半年) ÷ 2。</p>
+  </section>
+
+  <section class="card">
+    <h2>请假 / 缺席（天数）</h2>
+    <div class="table-wrap">
+      <table id="leaves">
+        <thead>
+          <tr><th>类别</th><th>上学年</th><th>下学年</th><th>总数</th><th>计算天数</th><th>每天扣分</th><th>小计</th></tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr><td colspan="6">缺席扣分总计</td><td id="totalDeduct">0</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="hint">病假累计超过 20 天的部分才扣分；丧假、公假、特假、特病不扣分。</p>
+  </section>
+
+  <section class="card result">
+    <div class="row"><span>平均分数</span><strong id="avg">0.00</strong></div>
+    <div class="row"><span>缺席扣分</span><strong id="deduct">0.00</strong></div>
+    <div class="row final"><span>实得分数</span><strong id="final">0.00</strong></div>
+    <p class="hint">误差为 ±5</p>
+    <button id="reset" type="button">清空全部</button>
+  </section>
+</main>
+
+<script>
+// ===== 配置：与 Excel 表一致 =====
+const SUBJECTS = [
+  { name: "华文", periods: 6 }, { name: "国文", periods: 6 },
+  { name: "英文", periods: 6 }, { name: "数学", periods: 7 },
+  { name: "历史", periods: 3 }, { name: "地理", periods: 3 },
+  { name: "科学", periods: 6 }, { name: "电脑", periods: 2 },
+  { name: "美术", periods: 1 }, { name: "辅导", periods: 1 },
+  { name: "体育", periods: 2 }, { name: "联课", periods: 3 },
+];
+
+// rate = 每天扣分；free = 免扣天数（病假超过 20 天才扣）；rate 为 0 表示不扣分
+const LEAVES = [
+  { name: "病假", rate: 0.001, free: 20 },
+  { name: "事假", rate: 0.01 },
+  { name: "丧假", rate: 0 },
+  { name: "迟到", rate: 0.02 },
+  { name: "旷课", rate: 0.1 },
+  { name: "公假", rate: 0 },
+  { name: "特假", rate: 0 },
+  { name: "特病", rate: 0 },
+];
+
+const STORAGE_KEY = "grade-calculator-v1";
+const $ = (id) => document.getElementById(id);
+const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
+
+// ===== 渲染表格 =====
+const scoreBody = $("scores").querySelector("tbody");
+SUBJECTS.forEach((s, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${s.name}</td>
+    <td><input type="number" min="0" max="100" step="any" data-k="s1-${i}"></td>
+    <td><input type="number" min="0" max="100" step="any" data-k="s2-${i}"></td>
+    <td id="avg-${i}">0.00</td>
+    <td>${s.periods}</td>
+    <td id="pt-${i}">0.00</td>`;
+  scoreBody.appendChild(tr);
+});
+
+const leaveBody = $("leaves").querySelector("tbody");
+LEAVES.forEach((l, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${l.name}</td>
+    <td><input type="number" min="0" step="any" data-k="l1-${i}"></td>
+    <td><input type="number" min="0" step="any" data-k="l2-${i}"></td>
+    <td id="lt-${i}">0</td>
+    <td id="lc-${i}">0</td>
+    <td>${l.rate ? l.rate : "不扣分"}</td>
+    <td id="ld-${i}">0.00</td>`;
+  leaveBody.appendChild(tr);
+});
+
+// ===== 计算 =====
+function calculate() {
+  const totalPeriods = SUBJECTS.reduce((a, s) => a + s.periods, 0);
+
+  // 下半年全部为 0 / 空 → 除以 1，否则除以 2（对应 Excel 的 E1）
+  const secondTotal = SUBJECTS.reduce((a, _, i) => a + num(document.querySelector(`[data-k="s2-${i}"]`).value), 0);
+  const divisor = secondTotal === 0 ? 1 : 2;
+
+  let points = 0;
+  SUBJECTS.forEach((s, i) => {
+    const sum = num(document.querySelector(`[data-k="s1-${i}"]`).value) +
+                num(document.querySelector(`[data-k="s2-${i}"]`).value);
+    const avg = sum / divisor;
+    const pt = avg * s.periods;
+    points += pt;
+    $(`avg-${i}`).textContent = fmt(avg);
+    $(`pt-${i}`).textContent = fmt(pt);
+  });
+  const average = points / totalPeriods;
+  $("totalPeriods").textContent = totalPeriods;
+  $("totalPoints").textContent = fmt(points);
+
+  let deduct = 0;
+  LEAVES.forEach((l, i) => {
+    const total = num(document.querySelector(`[data-k="l1-${i}"]`).value) +
+                  num(document.querySelector(`[data-k="l2-${i}"]`).value);
+    const counted = l.free ? Math.max(total - l.free, 0) : total;
+    const sub = l.rate * counted;
+    deduct += sub;
+    $(`lt-${i}`).textContent = total;
+    $(`lc-${i}`).textContent = l.rate ? counted : "-";
+    $(`ld-${i}`).textContent = l.rate ? fmt(sub) : "-";
+  });
+  $("totalDeduct").textContent = fmt(deduct);
+
+  $("avg").textContent = fmt(average);
+  $("deduct").textContent = fmt(deduct);
+  $("final").textContent = fmt(average - deduct);
+}
+
+// ===== 本地保存 =====
+function save() {
+  const data = {};
+  document.querySelectorAll("input").forEach((el) => { data[el.dataset.k || el.id] = el.value; });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+}
+function load() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    document.querySelectorAll("input").forEach((el) => {
+      const k = el.dataset.k || el.id;
+      if (k in data) el.value = data[k];
+    });
+  } catch (e) {}
+}
+
+document.addEventListener("input", () => { calculate(); save(); });
+$("reset").addEventListener("click", () => {
+  if (!confirm("确定清空所有数据？")) return;
+  document.querySelectorAll("[data-k]").forEach((el) => (el.value = ""));
+  calculate(); save();
+});
+
+load();
+calculate();
+</script>
+</body>
+</html>
