@@ -235,7 +235,6 @@ const LEAVES = [
 const STORAGE_KEY = "grade-calculator-v1";
 const OPEN_KEY = "grade-calculator-leave-open";
 const THEME_KEY = "grade-calculator-theme";
-const TERMS_KEY = "grade-calculator-terms-2026"; // 修改须知内容后，改这个值可让所有人重新确认
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
@@ -329,7 +328,7 @@ $("themeBtn").addEventListener("click", () => {
 systemDark.addEventListener("change", updateThemeBtn);
 updateThemeBtn();
 
-// ===== 使用须知 =====
+// ===== 使用须知（每次打开 / 刷新都会弹出）=====
 function showTerms() {
   $("termsMsg").textContent = "";
   $("termsMask").classList.add("show");
@@ -339,18 +338,13 @@ function hideTerms() {
   $("termsMask").classList.remove("show");
   document.body.classList.remove("locked");
 }
-$("agreeBtn").addEventListener("click", () => {
-  try { localStorage.setItem(TERMS_KEY, "1"); } catch (e) {}
-  hideTerms();
-});
+$("agreeBtn").addEventListener("click", hideTerms);
 $("disagreeBtn").addEventListener("click", () => {
   $("termsMsg").textContent = "需要同意使用须知后才能使用本计算器。";
 });
 $("termsLink").addEventListener("click", showTerms);
 
-let agreed = false;
-try { agreed = localStorage.getItem(TERMS_KEY) === "1"; } catch (e) {}
-if (!agreed) showTerms();
+showTerms(); // 不再记住同意状态，每次加载页面都弹出
 
 // ===== 本地保存 =====
 function save() {
