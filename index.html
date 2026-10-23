@@ -22,10 +22,8 @@ body {
   line-height: 1.5;
 }
 header { max-width: 900px; margin: 0 auto; padding: 24px 16px 8px; }
-h1 { margin: 0 0 12px; font-size: 1.6rem; }
+h1 { margin: 0; font-size: 1.6rem; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; }
-.meta { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: .9rem; }
-.meta input { width: 90px; }
 main { max-width: 900px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
 .table-wrap { overflow-x: auto; }
@@ -55,10 +53,6 @@ button:hover { background: var(--danger); color: #fff; }
 <body>
 <header>
   <h1>初三总平均分计算器</h1>
-  <div class="meta">
-    <label>年份 <input id="year" type="number" value="2026"></label>
-    <label>班级 <input id="class" type="text" value="初三4"></label>
-  </div>
 </header>
 
 <main>
@@ -79,11 +73,11 @@ button:hover { background: var(--danger); color: #fff; }
   </section>
 
   <section class="card">
-    <h2>请假 / 缺席（天数）</h2>
+    <h2>请假 / 缺席（节数）</h2>
     <div class="table-wrap">
       <table id="leaves">
         <thead>
-          <tr><th>类别</th><th>上学年</th><th>下学年</th><th>总数</th><th>计算天数</th><th>每天扣分</th><th>小计</th></tr>
+          <tr><th>类别</th><th>上学年</th><th>下学年</th><th>总数</th><th>计算节数</th><th>每节扣分</th><th>小计</th></tr>
         </thead>
         <tbody></tbody>
         <tfoot>
@@ -91,7 +85,7 @@ button:hover { background: var(--danger); color: #fff; }
         </tfoot>
       </table>
     </div>
-    <p class="hint">病假累计超过 20 天的部分才扣分；丧假、公假、特假、特病不扣分。</p>
+    <p class="hint">病假累计超过 20 节的部分才扣分；丧假、公假、特假、特病不扣分。</p>
   </section>
 
   <section class="card result">
@@ -114,7 +108,7 @@ const SUBJECTS = [
   { name: "体育", periods: 2 }, { name: "联课", periods: 3 },
 ];
 
-// rate = 每天扣分；free = 免扣天数（病假超过 20 天才扣）；rate 为 0 表示不扣分
+// rate = 每节扣分；free = 免扣节数（病假超过 20 节才扣）；rate 为 0 表示不扣分
 const LEAVES = [
   { name: "病假", rate: 0.001, free: 20 },
   { name: "事假", rate: 0.01 },
@@ -202,15 +196,14 @@ function calculate() {
 // ===== 本地保存 =====
 function save() {
   const data = {};
-  document.querySelectorAll("input").forEach((el) => { data[el.dataset.k || el.id] = el.value; });
+  document.querySelectorAll("input").forEach((el) => { data[el.dataset.k] = el.value; });
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
 }
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     document.querySelectorAll("input").forEach((el) => {
-      const k = el.dataset.k || el.id;
-      if (k in data) el.value = data[k];
+      if (el.dataset.k in data) el.value = data[el.dataset.k];
     });
   } catch (e) {}
 }
