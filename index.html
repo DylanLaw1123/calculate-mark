@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>2026年 初三总平均分计算器</title>
+<title>初三总平均分计算器</title>
 <style>
 :root {
   --bg: #f5f6f8; --card: #fff; --text: #1f2430; --muted: #6b7280;
@@ -39,6 +39,22 @@ input {
 td input { width: 84px; text-align: center; }
 input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hint { margin: 12px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* 可收起的区块 */
+details > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 1.1rem; font-weight: 600;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::after {
+  content: ""; width: 8px; height: 8px; margin-right: 4px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); transition: transform .2s;
+}
+details[open] > summary::after { transform: rotate(-135deg); }
+details[open] > summary { margin-bottom: 12px; }
+
 .result .row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .result .row strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .result .final { border-bottom: none; background: var(--accent-soft); padding: 12px; border-radius: 8px; margin-top: 8px; }
@@ -73,19 +89,21 @@ button:hover { background: var(--danger); color: #fff; }
   </section>
 
   <section class="card">
-    <h2>请假 / 缺席（节数）</h2>
-    <div class="table-wrap">
-      <table id="leaves">
-        <thead>
-          <tr><th>类别</th><th>上学年</th><th>下学年</th><th>总数</th><th>计算节数</th><th>每节扣分</th><th>小计</th></tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr><td colspan="6">缺席扣分总计</td><td id="totalDeduct">0</td></tr>
-        </tfoot>
-      </table>
-    </div>
-    <p class="hint">病假累计超过 20 节的部分才扣分；丧假、公假、特假、特病不扣分。</p>
+    <details id="leaveBox" open>
+      <summary>请假 / 缺席（节数）</summary>
+      <div class="table-wrap">
+        <table id="leaves">
+          <thead>
+            <tr><th>类别</th><th>上学年</th><th>下学年</th><th>总数</th><th>计算节数</th><th>每节扣分</th><th>小计</th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><td colspan="6">缺席扣分总计</td><td id="totalDeduct">0</td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="hint">病假累计超过 20 节的部分才扣分；丧假、公假、特假、特病不扣分。</p>
+    </details>
   </section>
 
   <section class="card result">
@@ -121,6 +139,7 @@ const LEAVES = [
 ];
 
 const STORAGE_KEY = "grade-calculator-v1";
+const OPEN_KEY = "grade-calculator-leave-open";
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
@@ -205,8 +224,14 @@ function load() {
     document.querySelectorAll("input").forEach((el) => {
       if (el.dataset.k in data) el.value = data[el.dataset.k];
     });
+    // 记住请假区块的展开/收起状态
+    if (localStorage.getItem(OPEN_KEY) === "0") $("leaveBox").open = false;
   } catch (e) {}
 }
+
+$("leaveBox").addEventListener("toggle", () => {
+  try { localStorage.setItem(OPEN_KEY, $("leaveBox").open ? "1" : "0"); } catch (e) {}
+});
 
 document.addEventListener("input", () => { calculate(); save(); });
 $("reset").addEventListener("click", () => {
