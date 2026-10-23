@@ -4,16 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>2026年 初三总平均分计算器</title>
+<script>
+// 尽早应用已保存的主题，避免页面闪烁
+try {
+  var t = localStorage.getItem("grade-calculator-theme");
+  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+} catch (e) {}
+</script>
 <style>
 :root {
   --bg: #f5f6f8; --card: #fff; --text: #1f2430; --muted: #6b7280;
   --line: #e5e7eb; --accent: #2563eb; --accent-soft: #e8efff; --danger: #dc2626;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #12141a; --card: #1b1e27; --text: #e8eaf0; --muted: #98a0b3;
     --line: #2d3240; --accent: #6b9bff; --accent-soft: #232b44; --danger: #f87171;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #12141a; --card: #1b1e27; --text: #e8eaf0; --muted: #98a0b3;
+  --line: #2d3240; --accent: #6b9bff; --accent-soft: #232b44; --danger: #f87171;
 }
 * { box-sizing: border-box; }
 body {
@@ -21,7 +32,10 @@ body {
   font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   line-height: 1.5;
 }
-header { max-width: 900px; margin: 0 auto; padding: 24px 16px 8px; }
+header {
+  max-width: 900px; margin: 0 auto; padding: 24px 16px 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
 h1 { margin: 0; font-size: 1.6rem; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; }
 main { max-width: 900px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; }
@@ -39,6 +53,16 @@ input {
 td input { width: 84px; text-align: center; }
 input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hint { margin: 12px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* 主题按钮 */
+#themeBtn {
+  flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; line-height: 1; cursor: pointer;
+  color: var(--text); background: var(--card);
+  border: 1px solid var(--line); border-radius: 50%;
+}
+#themeBtn:hover { background: var(--accent-soft); }
 
 /* 可收起的区块 */
 details > summary {
@@ -59,16 +83,17 @@ details[open] > summary { margin-bottom: 12px; }
 .result .row strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .result .final { border-bottom: none; background: var(--accent-soft); padding: 12px; border-radius: 8px; margin-top: 8px; }
 .result .final strong { font-size: 2rem; color: var(--accent); }
-button {
+#reset {
   margin-top: 12px; font: inherit; cursor: pointer; color: var(--danger);
   background: transparent; border: 1px solid var(--danger); border-radius: 6px; padding: 6px 14px;
 }
-button:hover { background: var(--danger); color: #fff; }
+#reset:hover { background: var(--danger); color: #fff; }
 </style>
 </head>
 <body>
 <header>
   <h1>2026年 初三总平均分计算器</h1>
+  <button id="themeBtn" type="button" aria-label="切换黑白主题" title="切换黑白主题">🌙</button>
 </header>
 
 <main>
@@ -140,6 +165,7 @@ const LEAVES = [
 
 const STORAGE_KEY = "grade-calculator-v1";
 const OPEN_KEY = "grade-calculator-leave-open";
+const THEME_KEY = "grade-calculator-theme";
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
@@ -211,6 +237,27 @@ function calculate() {
   $("deduct").textContent = fmt(deduct);
   $("final").textContent = fmt(average - deduct);
 }
+
+// ===== 主题切换 =====
+const root = document.documentElement;
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+function isDark() {
+  const t = root.getAttribute("data-theme");
+  return t ? t === "dark" : systemDark.matches;
+}
+function updateThemeBtn() {
+  // 深色时显示太阳（点击切到浅色），浅色时显示月亮（点击切到深色）
+  $("themeBtn").textContent = isDark() ? "☀️" : "🌙";
+}
+$("themeBtn").addEventListener("click", () => {
+  const next = isDark() ? "light" : "dark";
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  updateThemeBtn();
+});
+systemDark.addEventListener("change", updateThemeBtn);
+updateThemeBtn();
 
 // ===== 本地保存 =====
 function save() {
