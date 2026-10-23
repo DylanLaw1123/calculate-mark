@@ -32,13 +32,14 @@ body {
   font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   line-height: 1.5;
 }
+body.locked { overflow: hidden; }
 header {
   max-width: 900px; margin: 0 auto; padding: 24px 16px 8px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 h1 { margin: 0; font-size: 1.6rem; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; }
-main { max-width: 900px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; }
+main { max-width: 900px; margin: 0 auto; padding: 8px 16px 24px; display: grid; gap: 16px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 520px; }
@@ -88,6 +89,44 @@ details[open] > summary { margin-bottom: 12px; }
   background: transparent; border: 1px solid var(--danger); border-radius: 6px; padding: 6px 14px;
 }
 #reset:hover { background: var(--danger); color: #fff; }
+
+/* 页脚 */
+footer { text-align: center; padding: 0 16px 40px; font-size: .82rem; color: var(--muted); }
+footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+/* 使用须知弹窗 */
+#termsMask {
+  position: fixed; inset: 0; z-index: 100; padding: 16px;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .55);
+}
+#termsMask.show { display: flex; }
+.terms {
+  width: 100%; max-width: 520px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+.terms h3 { margin: 0; padding: 18px 20px 12px; font-size: 1.2rem; text-align: center; border-bottom: 1px solid var(--line); }
+.terms-body { padding: 14px 20px; overflow-y: auto; font-size: .92rem; }
+.terms-body .scope {
+  background: var(--accent-soft); color: var(--accent);
+  border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-weight: 600; text-align: center;
+}
+.terms-body ol { margin: 0; padding-left: 1.3em; }
+.terms-body li { margin-bottom: 8px; }
+.terms-body li b { color: var(--text); }
+.terms-foot { padding: 12px 20px 18px; border-top: 1px solid var(--line); }
+.terms-msg { min-height: 1.3em; margin: 0 0 8px; text-align: center; font-size: .85rem; color: var(--danger); }
+.terms-btns { display: flex; gap: 10px; }
+.terms-btns button {
+  flex: 1; font: inherit; font-size: 1rem; padding: 10px 0; cursor: pointer; border-radius: 8px;
+}
+#disagreeBtn { color: var(--muted); background: transparent; border: 1px solid var(--line); }
+#disagreeBtn:hover { background: var(--bg); }
+#agreeBtn { color: #fff; background: var(--accent); border: 1px solid var(--accent); font-weight: 600; }
+#agreeBtn:hover { filter: brightness(1.1); }
 </style>
 </head>
 <body>
@@ -140,6 +179,35 @@ details[open] > summary { margin-bottom: 12px; }
   </section>
 </main>
 
+<footer>
+  本计算器仅适用于 2026年 初三年末总平均分计算 ·
+  <a id="termsLink">使用须知</a>
+</footer>
+
+<!-- 使用须知弹窗 -->
+<div id="termsMask" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+  <div class="terms">
+    <h3 id="termsTitle">使用须知</h3>
+    <div class="terms-body">
+      <div class="scope">本计算器仅适用于 2026年 初三年末总平均分计算</div>
+      <ol>
+        <li><b>适用范围：</b>本工具仅按 2026年 初三年级的科目、周节数及扣分规则设计，不适用于其他年份、其他年级或其他学期的成绩计算。</li>
+        <li><b>结果仅供参考：</b>计算结果可能与实际有误差（±5），最终成绩请以学校正式公布的为准。</li>
+        <li><b>数据隐私：</b>你输入的所有成绩和请假数据只保存在你自己的浏览器中，不会上传到任何服务器。清除浏览器数据后将一并丢失。</li>
+        <li><b>正确使用：</b>请如实填写数据，不得将本工具用于伪造、篡改成绩等用途。</li>
+        <li><b>免责声明：</b>因输入错误、规则变动或使用本工具所产生的任何后果，由使用者自行承担。</li>
+      </ol>
+    </div>
+    <div class="terms-foot">
+      <p class="terms-msg" id="termsMsg"></p>
+      <div class="terms-btns">
+        <button id="disagreeBtn" type="button">不同意</button>
+        <button id="agreeBtn" type="button">同意并继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== 配置：与 Excel 表一致 =====
 const SUBJECTS = [
@@ -166,6 +234,7 @@ const LEAVES = [
 const STORAGE_KEY = "grade-calculator-v1";
 const OPEN_KEY = "grade-calculator-leave-open";
 const THEME_KEY = "grade-calculator-theme";
+const TERMS_KEY = "grade-calculator-terms-2026"; // 修改须知内容后，改这个值可让所有人重新确认
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
@@ -258,6 +327,29 @@ $("themeBtn").addEventListener("click", () => {
 });
 systemDark.addEventListener("change", updateThemeBtn);
 updateThemeBtn();
+
+// ===== 使用须知 =====
+function showTerms() {
+  $("termsMsg").textContent = "";
+  $("termsMask").classList.add("show");
+  document.body.classList.add("locked");
+}
+function hideTerms() {
+  $("termsMask").classList.remove("show");
+  document.body.classList.remove("locked");
+}
+$("agreeBtn").addEventListener("click", () => {
+  try { localStorage.setItem(TERMS_KEY, "1"); } catch (e) {}
+  hideTerms();
+});
+$("disagreeBtn").addEventListener("click", () => {
+  $("termsMsg").textContent = "需要同意使用须知后才能使用本计算器。";
+});
+$("termsLink").addEventListener("click", showTerms);
+
+let agreed = false;
+try { agreed = localStorage.getItem(TERMS_KEY) === "1"; } catch (e) {}
+if (!agreed) showTerms();
 
 // ===== 本地保存 =====
 function save() {
