@@ -173,7 +173,7 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
         </tfoot>
       </table>
     </div>
-    <p class="hint">下半年全部留空时，平均 = 上半年；填写下半年后，平均 = (上半年 + 下半年) ÷ 2。</p>
+    <p class="hint">下半年全部留空时，平均 = 上半年；填写下半年后，平均 = (上半年 + 下半年) ÷ 2。平均分按进位保留两位小数。</p>
   </section>
 
   <section class="card">
@@ -261,7 +261,10 @@ const OPEN_KEY = "grade-calculator-leave-open";
 const THEME_KEY = "grade-calculator-theme";
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+// 四舍五入保留两位（用于扣分等）
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
+// 进位（向上取整）保留两位，用于平均分显示
+const fmtCeil = (n) => (Math.ceil(n * 100 - 1e-9) / 100).toFixed(2);
 
 // ===== 渲染表格 =====
 const scoreBody = $("scores").querySelector("tbody");
@@ -306,7 +309,7 @@ function calculate() {
     const avg = sum / divisor;
     const pt = avg * s.periods;
     points += pt;
-    $(`avg-${i}`).textContent = fmt(avg);
+    $(`avg-${i}`).textContent = fmtCeil(avg);
     $(`pt-${i}`).textContent = fmt(pt);
   });
   const average = points / totalPeriods;
@@ -326,9 +329,9 @@ function calculate() {
   });
   $("totalDeduct").textContent = fmt(deduct);
 
-  $("avg").textContent = fmt(average);
+  $("avg").textContent = fmtCeil(average);
   $("deduct").textContent = fmt(deduct);
-  $("final").textContent = fmt(average - deduct);
+  $("final").textContent = fmtCeil(average - deduct);
 }
 
 // ===== 主题切换 =====
