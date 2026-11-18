@@ -173,7 +173,7 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
         </tfoot>
       </table>
     </div>
-    <p class="hint">下半年全部留空时，平均 = 上半年；填写下半年后，平均 = (上半年 + 下半年) ÷ 2。平均一列按进位保留两位小数。</p>
+    <p class="hint">下半年全部留空时，平均 = 上半年；填写下半年后，平均 = (上半年 + 下半年) ÷ 2，结果向上取整（如 59.5 → 60）。</p>
   </section>
 
   <section class="card">
@@ -263,8 +263,8 @@ const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 // 四舍五入保留两位
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
-// 进位（向上取整）保留两位，仅用于“平均”列
-const fmtCeil = (n) => (Math.ceil(n * 100 - 1e-9) / 100).toFixed(2);
+// 向上取整到整数（用于“平均”列显示）
+const ceilInt = (n) => (Math.ceil(n - 1e-9)).toString();
 
 // ===== 渲染表格 =====
 const scoreBody = $("scores").querySelector("tbody");
@@ -274,7 +274,7 @@ SUBJECTS.forEach((s, i) => {
     <td>${s.name}</td>
     <td><input type="number" min="0" max="100" step="any" data-k="s1-${i}"></td>
     <td><input type="number" min="0" max="100" step="any" data-k="s2-${i}"></td>
-    <td id="avg-${i}">0.00</td>
+    <td id="avg-${i}">0</td>
     <td>${s.periods}</td>
     <td id="pt-${i}">0.00</td>`;
   scoreBody.appendChild(tr);
@@ -307,10 +307,12 @@ function calculate() {
     const sum = num(document.querySelector(`[data-k="s1-${i}"]`).value) +
                 num(document.querySelector(`[data-k="s2-${i}"]`).value);
     const avg = sum / divisor;
-    const pt = avg * s.periods;
+    // 积分使用“向上取整后的平均”× 周节数
+    const avgCeil = Math.ceil(avg - 1e-9);
+    const pt = avgCeil * s.periods;
     points += pt;
-    // 只有“平均”这一列用进位
-    $(`avg-${i}`).textContent = fmtCeil(avg);
+    // “平均”列显示向上取整的整数
+    $(`avg-${i}`).textContent = ceilInt(avg);
     $(`pt-${i}`).textContent = fmt(pt);
   });
   const average = points / totalPeriods;
@@ -330,7 +332,6 @@ function calculate() {
   });
   $("totalDeduct").textContent = fmt(deduct);
 
-  // 结果区恢复四舍五入
   $("avg").textContent = fmt(average);
   $("deduct").textContent = fmt(deduct);
   $("final").textContent = fmt(average - deduct);
