@@ -55,6 +55,20 @@ td input { width: 84px; text-align: center; }
 input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hint { margin: 12px 0 0; font-size: .82rem; color: var(--muted); }
 
+/* 版本提示条 */
+.version-banner {
+  max-width: 900px; margin: 0 auto; padding: 0 16px;
+}
+.version-banner .inner {
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 10px;
+  padding: 10px 14px; font-size: .9rem; font-weight: 600;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.version-banner a {
+  color: var(--accent); text-decoration: underline; word-break: break-all;
+}
+
 /* 主题按钮 */
 #themeBtn {
   flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin: 0;
@@ -134,6 +148,16 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
   <h1>2026年 初三总平均分计算器</h1>
   <button id="themeBtn" type="button" aria-label="切换黑白主题" title="切换黑白主题">🌙</button>
 </header>
+
+<!-- 版本提示条：当前页面不是最新版本 -->
+<div class="version-banner">
+  <div class="inner">
+    ⚠️ 此版本已不是最新版本，请使用最新版：
+    <a href="https://dylanlaw1123.github.io/mark-calculator/" target="_blank" rel="noopener noreferrer">
+      https://dylanlaw1123.github.io/mark-calculator/
+    </a>
+  </div>
+</div>
 
 <main>
   <section class="card">
