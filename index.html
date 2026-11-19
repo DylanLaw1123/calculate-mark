@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>2026年 初三总平均分计算器</title>
 <script>
-// 尽早应用已保存的主题，避免页面闪烁
 try {
   var t = localStorage.getItem("grade-calculator-theme");
   if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
@@ -55,21 +54,19 @@ td input { width: 84px; text-align: center; }
 input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hint { margin: 12px 0 0; font-size: .82rem; color: var(--muted); }
 
-/* 版本提示条 */
+/* 版本提示按钮 */
 .version-banner {
   max-width: 900px; margin: 0 auto; padding: 0 16px;
+  display: flex; justify-content: center;
 }
-.version-banner .inner {
-  background: var(--accent-soft); color: var(--accent);
+.version-btn {
+  font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+  color: var(--accent); background: var(--accent-soft);
   border: 1px solid var(--accent); border-radius: 10px;
-  padding: 10px 14px; font-size: .9rem; font-weight: 600;
-  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding: 10px 18px;
 }
-.version-banner a {
-  color: var(--accent); text-decoration: underline; word-break: break-all;
-}
+.version-btn:hover { filter: brightness(0.97); }
 
-/* 主题按钮 */
 #themeBtn {
   flex-shrink: 0; width: 40px; height: 40px; padding: 0; margin: 0;
   display: flex; align-items: center; justify-content: center;
@@ -79,7 +76,6 @@ input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 }
 #themeBtn:hover { background: var(--accent-soft); }
 
-/* 可收起的区块 */
 details > summary {
   list-style: none; cursor: pointer; user-select: none;
   display: flex; align-items: center; justify-content: space-between;
@@ -104,17 +100,18 @@ details[open] > summary { margin-bottom: 12px; }
 }
 #reset:hover { background: var(--danger); color: #fff; }
 
-/* 页脚 */
 footer { text-align: center; padding: 0 16px 40px; font-size: .82rem; color: var(--muted); }
 footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
-/* 使用须知弹窗 */
-#termsMask {
+/* 弹窗通用 */
+.mask {
   position: fixed; inset: 0; z-index: 100; padding: 16px;
   display: none; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, .55);
 }
-#termsMask.show { display: flex; }
+.mask.show { display: flex; }
+
+/* 使用须知弹窗 */
 .terms {
   width: 100%; max-width: 520px; max-height: 90vh;
   display: flex; flex-direction: column;
@@ -141,6 +138,26 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 #disagreeBtn:hover { background: var(--bg); }
 #agreeBtn { color: #fff; background: var(--accent); border: 1px solid var(--accent); font-weight: 600; }
 #agreeBtn:hover { filter: brightness(1.1); }
+
+/* 版本提示弹窗（较简洁） */
+.version-dialog {
+  width: 100%; max-width: 400px;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+  padding: 20px;
+  text-align: center;
+}
+.version-dialog h3 { margin: 0 0 10px; font-size: 1.15rem; }
+.version-dialog p { margin: 0 0 18px; font-size: .92rem; color: var(--muted); }
+.version-actions { display: flex; gap: 10px; }
+.version-actions button {
+  flex: 1; font: inherit; font-size: 1rem; padding: 10px 0; cursor: pointer; border-radius: 8px;
+}
+#versionCancelBtn { color: var(--muted); background: transparent; border: 1px solid var(--line); }
+#versionCancelBtn:hover { background: var(--bg); }
+#versionGoBtn { color: #fff; background: var(--accent); border: 1px solid var(--accent); font-weight: 600; }
+#versionGoBtn:hover { filter: brightness(1.1); }
 </style>
 </head>
 <body>
@@ -149,14 +166,8 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
   <button id="themeBtn" type="button" aria-label="切换黑白主题" title="切换黑白主题">🌙</button>
 </header>
 
-<!-- 版本提示条：当前页面不是最新版本 -->
 <div class="version-banner">
-  <div class="inner">
-    ⚠️ 此版本已不是最新版本，请使用最新版：
-    <a href="https://dylanlaw1123.github.io/mark-calculator/" target="_blank" rel="noopener noreferrer">
-      https://dylanlaw1123.github.io/mark-calculator/
-    </a>
-  </div>
+  <button id="versionBtn" class="version-btn" type="button">⚠️ 此版本已不是最新版本</button>
 </div>
 
 <main>
@@ -209,7 +220,7 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 </footer>
 
 <!-- 使用须知弹窗 -->
-<div id="termsMask" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+<div id="termsMask" class="mask" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
   <div class="terms">
     <h3 id="termsTitle">使用须知</h3>
     <div class="terms-body">
@@ -233,8 +244,19 @@ footer a { color: var(--accent); cursor: pointer; text-decoration: underline; }
   </div>
 </div>
 
+<!-- 版本提示弹窗 -->
+<div id="versionMask" class="mask" role="dialog" aria-modal="true" aria-labelledby="versionTitle">
+  <div class="version-dialog">
+    <h3 id="versionTitle">有新版本可用</h3>
+    <p>当前版本已不是最新版本。<br>是否前往最新版本页面？</p>
+    <div class="version-actions">
+      <button id="versionCancelBtn" type="button">取消</button>
+      <button id="versionGoBtn" type="button">前往最新版</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ===== 配置：与 Excel 表一致 =====
 const SUBJECTS = [
   { name: "华文", periods: 6 }, { name: "国文", periods: 6 },
   { name: "英文", periods: 6 }, { name: "数学", periods: 7 },
@@ -244,7 +266,6 @@ const SUBJECTS = [
   { name: "体育", periods: 2 }, { name: "联课", periods: 3 },
 ];
 
-// rate = 每节扣分；free = 免扣节数（病假超过 20 节才扣）；rate 为 0 表示不扣分
 const LEAVES = [
   { name: "病假", rate: 0.001, free: 20 },
   { name: "事假", rate: 0.01 },
@@ -259,14 +280,12 @@ const LEAVES = [
 const STORAGE_KEY = "grade-calculator-v1";
 const OPEN_KEY = "grade-calculator-leave-open";
 const THEME_KEY = "grade-calculator-theme";
+const LATEST_URL = "https://dylanlaw1123.github.io/mark-calculator/";
 const $ = (id) => document.getElementById(id);
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
-// 四舍五入保留两位
 const fmt = (n) => (Math.round(n * 100) / 100).toFixed(2);
-// 向上取整到整数（用于“平均”列显示）
 const ceilInt = (n) => (Math.ceil(n - 1e-9)).toString();
 
-// ===== 渲染表格 =====
 const scoreBody = $("scores").querySelector("tbody");
 SUBJECTS.forEach((s, i) => {
   const tr = document.createElement("tr");
@@ -294,11 +313,9 @@ LEAVES.forEach((l, i) => {
   leaveBody.appendChild(tr);
 });
 
-// ===== 计算 =====
 function calculate() {
   const totalPeriods = SUBJECTS.reduce((a, s) => a + s.periods, 0);
 
-  // 下半年全部为 0 / 空 → 除以 1，否则除以 2（对应 Excel 的 E1）
   const secondTotal = SUBJECTS.reduce((a, _, i) => a + num(document.querySelector(`[data-k="s2-${i}"]`).value), 0);
   const divisor = secondTotal === 0 ? 1 : 2;
 
@@ -307,11 +324,9 @@ function calculate() {
     const sum = num(document.querySelector(`[data-k="s1-${i}"]`).value) +
                 num(document.querySelector(`[data-k="s2-${i}"]`).value);
     const avg = sum / divisor;
-    // 积分使用“向上取整后的平均”× 周节数
     const avgCeil = Math.ceil(avg - 1e-9);
     const pt = avgCeil * s.periods;
     points += pt;
-    // “平均”列显示向上取整的整数
     $(`avg-${i}`).textContent = ceilInt(avg);
     $(`pt-${i}`).textContent = fmt(pt);
   });
@@ -337,6 +352,22 @@ function calculate() {
   $("final").textContent = fmt(average - deduct);
 }
 
+// ===== 版本弹窗 =====
+function showVersionDialog() {
+  $("versionMask").classList.add("show");
+  document.body.classList.add("locked");
+}
+function hideVersionDialog() {
+  $("versionMask").classList.remove("show");
+  document.body.classList.remove("locked");
+}
+$("versionBtn").addEventListener("click", showVersionDialog);
+$("versionCancelBtn").addEventListener("click", hideVersionDialog);
+$("versionGoBtn").addEventListener("click", () => {
+  window.open(LATEST_URL, "_blank", "noopener");
+  hideVersionDialog();
+});
+
 // ===== 主题切换 =====
 const root = document.documentElement;
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
@@ -346,7 +377,6 @@ function isDark() {
   return t ? t === "dark" : systemDark.matches;
 }
 function updateThemeBtn() {
-  // 深色时显示太阳（点击切到浅色），浅色时显示月亮（点击切到深色）
   $("themeBtn").textContent = isDark() ? "☀️" : "🌙";
 }
 $("themeBtn").addEventListener("click", () => {
@@ -358,7 +388,7 @@ $("themeBtn").addEventListener("click", () => {
 systemDark.addEventListener("change", updateThemeBtn);
 updateThemeBtn();
 
-// ===== 使用须知（每次打开 / 刷新都会弹出）=====
+// ===== 使用须知 =====
 function showTerms() {
   $("termsMsg").textContent = "";
   $("termsMask").classList.add("show");
@@ -374,7 +404,7 @@ $("disagreeBtn").addEventListener("click", () => {
 });
 $("termsLink").addEventListener("click", showTerms);
 
-showTerms(); // 不再记住同意状态，每次加载页面都弹出
+showTerms();
 
 // ===== 本地保存 =====
 function save() {
@@ -388,7 +418,6 @@ function load() {
     document.querySelectorAll("input").forEach((el) => {
       if (el.dataset.k in data) el.value = data[el.dataset.k];
     });
-    // 记住请假区块的展开/收起状态
     if (localStorage.getItem(OPEN_KEY) === "0") $("leaveBox").open = false;
   } catch (e) {}
 }
